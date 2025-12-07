@@ -1,80 +1,64 @@
-import { useState, useCallback } from 'react';
-import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, type NodeTypes, type Node } from '@xyflow/react';
+import { ReactFlow, type NodeTypes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import MyCustomNode, { type MyCustomNodeType, type MyCustomNodeData } from './components/MyCustomNode';
 import NodeEditPanel from './components/NodeEditPanel';
+import {useWorkflowState, type WorkflowNodeType} from './hooks/useWorkflowState';
+import WorkflowNode from "./components/WorkflowNode.tsx";
 
-const initialNodes: MyCustomNodeType[] = [
+const initialNodes: WorkflowNodeType[] = [
     { 
-        id: 'n1', 
-        position: { x: 0, y: 0 }, 
-        data: { name: 'Node 1', stepType: 'start', description: 'Start' },
-        type: 'custom'
+        id: 'start-1', 
+        position: { x: 250, y: 0 }, 
+        data: { name: 'Début', stepType: 'start', description: 'Point de départ du workflow' },
+        type: 'workflow'
     },
     { 
-        id: 'n2', 
-        position: { x: 0, y: 100 }, 
-        data: { name: 'Node 2', stepType: 'SMS', description: 'Deuxième nœud' },
-        type: 'custom'
+        id: 'email-1', 
+        position: { x: 250, y: 150 }, 
+        data: { name: 'Email de bienvenue', stepType: 'email', description: 'Envoi d\'un email de bienvenue', hasConditionalOutputs: true },
+        type: 'workflow'
     },
 ];
 
-const initialEdges = [{ id: 'n1-n2', source: 'n1', target: 'n2' }];
+const initialEdges = [
+    { id: 'start-1-email-1', source: 'start-1', target: 'email-1', sourceHandle: 'default', targetHandle: 'input' }
+];
 
 const nodeTypes: NodeTypes = {
-    custom: MyCustomNode,
+    workflow: WorkflowNode,
 };
 
 export default function App() {
-    const [nodes, setNodes] = useState<MyCustomNodeType[]>(initialNodes);
-    const [edges, setEdges] = useState(initialEdges);
-    const [selectedNode, setSelectedNode] = useState<MyCustomNodeType | null>(null);
-
-    const onNodesChange = useCallback(
-        (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
-        [],
-    );
-    
-    const onEdgesChange = useCallback(
-        (changes) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
-        [],
-    );
-    
-    const onConnect = useCallback(
-        (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-        [],
-    );
-
-    const onNodeClick = useCallback((_event, node: Node) => {
-        setSelectedNode(node as MyCustomNodeType);
-    }, []);
-
-    const onPaneClick = useCallback(() => {
-        setSelectedNode(null);
-    }, []);
-
-    const onNodeUpdate = useCallback((nodeId: string, newData: MyCustomNodeData) => {
-        setNodes((nodesSnapshot) =>
-            nodesSnapshot.map((node) =>
-                node.id === nodeId ? { ...node, data: newData } : node
-            )
-        );
-    }, []);
+    const {
+        nodes,
+        edges,
+        selectedNode,
+        onNodesChange,
+        onEdgesChange,
+        onConnect,
+        onNodeClick,
+        onPaneClick,
+        onNodeUpdate,
+    } = useWorkflowState(initialNodes, initialEdges);
 
     return (
-        <div className="h-screen w-screen flex flex-row">
-            <ReactFlow 
-                className="basis-3/4"
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onNodeClick={onNodeClick}
-                onPaneClick={onPaneClick}
-                nodeTypes={nodeTypes}
-                fitView
-            />
+        <div className="h-screen w-screen flex bg-gray-50">
+            <div className="flex-1">
+                <ReactFlow 
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onNodeClick={onNodeClick}
+                    onPaneClick={onPaneClick}
+                    nodeTypes={nodeTypes}
+                    fitView
+                    className="bg-gray-100"
+                    nodesDraggable
+                    nodesConnectable
+                    elementsSelectable
+                />
+            </div>
             <NodeEditPanel 
                 selectedNode={selectedNode}
                 onNodeUpdate={onNodeUpdate}
