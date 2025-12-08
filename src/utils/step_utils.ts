@@ -1,4 +1,4 @@
-import type {ExecutionStatus, StepType} from "./types/WorkflowSimulationTypes.ts";
+import type {ExecutionStatus, StepType} from "../types/WorkflowSimulationTypes.ts";
 
 export const getStepIcon = (stepType: StepType): string => {
     const iconMap: Record<StepType, string> = {

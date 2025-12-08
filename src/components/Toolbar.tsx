@@ -1,5 +1,5 @@
 import type { StepType } from '../types/WorkflowSimulationTypes';
-import { getStepIcon } from '../step_utils';
+import { getStepIcon } from '../utils/step_utils.ts';
 
 interface ToolbarProps {
     onAddNode: (stepType: StepType) => void;

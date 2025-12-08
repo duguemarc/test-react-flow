@@ -6,7 +6,7 @@ import {
     getStepIcon,
     needsInput,
     needsOutput
-} from "../step_utils.ts";
+} from "../utils/step_utils.ts";
 import { twMerge } from 'tailwind-merge';
 import type {WorkflowNodeType} from "../hooks/useWorkflowState.ts";
 

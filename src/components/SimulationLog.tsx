@@ -1,5 +1,5 @@
 import type { SimulationLogEntry } from '../types/WorkflowSimulationTypes';
-import { getStatusLabel } from '../step_utils';
+import { getStatusLabel } from '../utils/step_utils.ts';
 
 interface SimulationLogProps {
     log: SimulationLogEntry[];
