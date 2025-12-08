@@ -69,5 +69,6 @@ export const useWorkflowState = (initialNodes: WorkflowNodeType[] = [], initialE
         addNode,
         deleteNode,
         setSelectedNode,
+        setNodes, // Ajout de cette fonction
     };
 };

@@ -1,4 +1,3 @@
-
 export type StepType = 'start' | 'sms' | 'email' | 'custom' | 'end';
 
 export type ExecutionStatus = 'pending' | 'running' | 'success' | 'failure';
@@ -11,6 +10,7 @@ export type WorkflowNodeData = {
     description?: string;
     status?: ExecutionStatus;
     hasConditionalOutputs?: boolean;
+    successRate?: number; // Pourcentage de réussite pour les nœuds custom (0-100)
 }
 
 export interface WorkflowEdgeData {
