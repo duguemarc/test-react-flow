@@ -13,10 +13,11 @@ export default function NodeEditPanel({ selectedNode, onNodeUpdate }: NodeEditPa
     const {
         register,
         handleSubmit,
-        formState: { errors },
+        formState: { errors, isValid },
         watch
     } = useForm<NodeFormData>({
         resolver: zodResolver(nodeFormSchema),
+        mode: 'onChange',
         defaultValues: {
             name: '',
             stepType: 'start',
@@ -126,7 +127,8 @@ export default function NodeEditPanel({ selectedNode, onNodeUpdate }: NodeEditPa
 
                 <button
                     type="submit"
-                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
+                    disabled={!isValid}
+                    className={`w-full text-white py-2 px-4 rounded-md bg-blue-500 hover:bg-blue-600`}
                 >
                     Mettre à jour
                 </button>
