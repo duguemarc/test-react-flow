@@ -1,8 +1,9 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { WorkflowNodeType } from "../hooks/useWorkflowState";
-import type { WorkflowNodeData, StepType } from "../types/WorkflowSimulationTypes";
+import type { WorkflowNodeData } from "../types/WorkflowSimulationTypes";
 import { type NodeFormData, nodeFormSchema } from "../validation/NodeFormSchema";
+import { hasConditionalOutputsByType } from "../utils/step_utils";
 
 interface NodeEditPanelProps {
     selectedNode: WorkflowNodeType | null;
@@ -22,20 +23,17 @@ export default function NodeEditPanel({ selectedNode, onNodeUpdate }: NodeEditPa
             name: '',
             stepType: 'start',
             description: '',
-            hasConditionalOutputs: false,
             successRate: 80
         },
         values: selectedNode ? {
             name: selectedNode.data.name,
             stepType: selectedNode.data.stepType,
             description: selectedNode.data.description || '',
-            hasConditionalOutputs: selectedNode.data.hasConditionalOutputs || false,
             successRate: selectedNode.data.successRate || 80
         } : undefined
     });
 
     const stepType = watch('stepType');
-    const canHaveConditionalOutputs = stepType && !(['start', 'end'] as StepType[]).includes(stepType);
     const isCustomType = stepType === 'custom';
 
     const onSubmit = handleSubmit((data: NodeFormData) => {
@@ -44,7 +42,7 @@ export default function NodeEditPanel({ selectedNode, onNodeUpdate }: NodeEditPa
                 name: data.name,
                 stepType: data.stepType,
                 description: data.description || '',
-                hasConditionalOutputs: data.hasConditionalOutputs || false,
+                hasConditionalOutputs: hasConditionalOutputsByType(data.stepType),
                 successRate: data.stepType === 'custom' ? data.successRate : undefined,
                 status: selectedNode.data.status // Préserver le statut existant
             });
@@ -115,21 +113,6 @@ export default function NodeEditPanel({ selectedNode, onNodeUpdate }: NodeEditPa
                         {errors.successRate && (
                             <p className="text-red-500 text-sm mt-1">{errors.successRate.message}</p>
                         )}
-                    </div>
-                )}
-
-                {canHaveConditionalOutputs && (
-                    <div>
-                        <label className="flex items-center space-x-2">
-                            <input
-                                type="checkbox"
-                                {...register('hasConditionalOutputs')}
-                                className="rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
-                            />
-                            <span className="text-sm font-medium text-gray-700">
-                                Transitions conditionnelles (Success/Failure)
-                            </span>
-                        </label>
                     </div>
                 )}
 

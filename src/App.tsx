@@ -9,6 +9,7 @@ import { useWorkflowSimulation } from './hooks/useWorkflowSimulation';
 import { useFlowPersistence } from './hooks/useFlowPersistence';
 import WorkflowNode from "./components/WorkflowNode.tsx";
 import type {StepType, ExecutionStatus} from './types/WorkflowSimulationTypes';
+import { hasConditionalOutputsByType } from './utils/step_utils';
 
 const initialNodes: WorkflowNodeType[] = [
     {
@@ -20,7 +21,12 @@ const initialNodes: WorkflowNodeType[] = [
     {
         id: 'email-1',
         position: { x: 250, y: 150 },
-        data: { name: 'Email de bienvenue', stepType: 'email', description: 'Envoi d\'un email de bienvenue', hasConditionalOutputs: true },
+        data: { 
+            name: 'Email de bienvenue', 
+            stepType: 'email', 
+            description: 'Envoi d\'un email de bienvenue', 
+            hasConditionalOutputs: true
+        },
         type: 'workflow'
     },
 ];
@@ -63,6 +69,7 @@ export default function App() {
         addNode,
         deleteNode,
         setNodes,
+        cleanEdges,
     } = useWorkflowState(loadedNodes, loadedEdges);
 
     const {
@@ -100,6 +107,15 @@ export default function App() {
         };
     }, [nodes, edges, saveFlow]);
 
+    // Nettoyage automatique des edges lors du chargement initial
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            cleanEdges();
+        }, 100);
+        
+        return () => clearTimeout(timer);
+    }, [cleanEdges]);
+
     const getDefaultName = (type: StepType): string => {
         const nameMap: Record<StepType, string> = {
             start: 'Début',
@@ -126,7 +142,7 @@ export default function App() {
                 name: getDefaultName(stepType),
                 stepType,
                 description: '',
-                hasConditionalOutputs: stepType !== 'start' && stepType !== 'end' ? false : undefined
+                hasConditionalOutputs: hasConditionalOutputsByType(stepType)
             },
             type: 'workflow'
         };
@@ -165,7 +181,6 @@ export default function App() {
             stopSimulation();
         }
         clearLog(nodes, onNodeStatusUpdate);
-
     }
     return (
         <div className="h-screen w-screen flex bg-gray-200">

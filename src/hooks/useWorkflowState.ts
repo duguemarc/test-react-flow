@@ -1,16 +1,50 @@
-import { useState, useCallback } from 'react';
+
+import { useState, useCallback, useMemo } from 'react';
 import { applyNodeChanges, applyEdgeChanges, addEdge, type Node, type Edge, type NodeChange, type EdgeChange, type Connection } from '@xyflow/react';
 import type {WorkflowNodeData} from "../types/WorkflowSimulationTypes.ts";
+import { hasConditionalOutputsByType } from '../utils/step_utils.ts';
 
 export type WorkflowNodeType = Node<WorkflowNodeData, 'workflow'>;
 
+// Fonction utilitaire pour valider un edge
+const isEdgeValid = (edge: Edge, nodes: WorkflowNodeType[]): boolean => {
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const targetNode = nodes.find(n => n.id === edge.target);
+
+    // Vérifier que les nœuds existent
+    if (!sourceNode || !targetNode) {
+        return false;
+    }
+
+    // Vérifier les handles source selon le type de nœud
+    const hasConditionalOutputs = hasConditionalOutputsByType(sourceNode.data.stepType);
+
+    if (hasConditionalOutputs) {
+        // Si le nœud a des sorties conditionnelles, l'edge doit utiliser 'success' ou 'failure'
+        return ['success', 'failure'].includes(edge.sourceHandle || '');
+    } else {
+        // Si le nœud n'a pas de sorties conditionnelles, l'edge doit utiliser 'default'
+        return edge.sourceHandle === 'default' || edge.sourceHandle === null;
+    }
+};
+
+// Fonction pour nettoyer les edges invalides
+const cleanInvalidEdges = (edges: Edge[], nodes: WorkflowNodeType[]): Edge[] => {
+    return edges.filter(edge => isEdgeValid(edge, nodes));
+};
+
 export const useWorkflowState = (initialNodes: WorkflowNodeType[] = [], initialEdges: Edge[] = []) => {
+    // Nettoyer les edges initiaux au cas où ils seraient incorrects (chargés depuis localStorage)
+    const cleanedInitialEdges = useMemo(() => {
+        return cleanInvalidEdges(initialEdges, initialNodes);
+    }, [initialNodes, initialEdges]);
+
     const [nodes, setNodes] = useState<WorkflowNodeType[]>(initialNodes);
-    const [edges, setEdges] = useState<Edge[]>(initialEdges);
+    const [edges, setEdges] = useState<Edge[]>(cleanedInitialEdges);
     const [selectedNode, setSelectedNode] = useState<WorkflowNodeType | null>(null);
 
     const onNodesChange = useCallback(
-        (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds) as WorkflowNodeType[]),
+        (changes: NodeChange[]) => {setNodes((nds) => applyNodeChanges(changes, nds) as WorkflowNodeType[])},
         []
     );
 
@@ -32,17 +66,32 @@ export const useWorkflowState = (initialNodes: WorkflowNodeType[] = [], initialE
         setSelectedNode(null);
     }, []);
 
+
     const onNodeUpdate = useCallback((nodeId: string, newData: WorkflowNodeData) => {
-        setNodes((nds) =>
-            nds.map((node) =>
+        const oldNode = nodes.find(n => n.id === nodeId);
+        const typeChanged = oldNode && oldNode.data.stepType !== newData.stepType;
+        if(typeChanged) console.log("on a changé de type !");
+        setNodes((nds) => {
+            const updatedNodes = nds.map((node) =>
                 node.id === nodeId ? { ...node, data: newData } : node
-            )
-        );
+            );
+
+            if (typeChanged) {
+                setEdges((currentEdges) => {
+                    console.log("current edges", currentEdges);
+                    console.log("updated Nodes", updatedNodes);
+                    return cleanInvalidEdges(currentEdges, updatedNodes);
+                });
+            }
+
+            return updatedNodes;
+        });
+
         // Mettre à jour le nœud sélectionné aussi
         setSelectedNode((selected) =>
             selected?.id === nodeId ? { ...selected, data: newData } : selected
         );
-    }, []);
+    }, [nodes]);
 
     const addNode = useCallback((node: WorkflowNodeType) => {
         setNodes((nds) => [...nds, node]);
@@ -55,6 +104,11 @@ export const useWorkflowState = (initialNodes: WorkflowNodeType[] = [], initialE
             setSelectedNode(null);
         }
     }, [selectedNode]);
+
+    // Fonction utilitaire pour forcer un nettoyage des edges
+    const cleanEdges = useCallback(() => {
+        setEdges((currentEdges) => cleanInvalidEdges(currentEdges, nodes));
+    }, [nodes]);
 
     return {
         nodes,
@@ -69,6 +123,7 @@ export const useWorkflowState = (initialNodes: WorkflowNodeType[] = [], initialE
         addNode,
         deleteNode,
         setSelectedNode,
-        setNodes, // Ajout de cette fonction
+        setNodes,
+        cleanEdges,
     };
 };

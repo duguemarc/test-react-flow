@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import type { WorkflowNodeType } from './useWorkflowState';
 import type { SimulationLogEntry, ExecutionStatus } from '../types/WorkflowSimulationTypes';
 import type { Edge } from '@xyflow/react';
+import { hasConditionalOutputsByType } from '../utils/step_utils';
 
 export const useWorkflowSimulation = () => {
     const [isSimulating, setIsSimulating] = useState(false);
@@ -37,7 +38,7 @@ export const useWorkflowSimulation = () => {
             case 'start':
                 return 'success'; // Start réussit toujours
             case 'sms':
-                return 'success'; // SMS réussit toujours
+                return 'success'; // SMS réussit toujours (100%)
             case 'email':
                 return Math.random() < 0.7 ? 'success' : 'failure'; // 70% de chance de succès
             case 'custom':
@@ -67,15 +68,16 @@ export const useWorkflowSimulation = () => {
 
         let relevantEdges;
         
-        if (currentNode.data.hasConditionalOutputs) {
-            // Pour les noeuds avec transitions conditionnelles
+        // Utiliser la logique automatique basée sur le type
+        if (hasConditionalOutputsByType(currentNode.data.stepType)) {
+            // Pour les noeuds avec transitions conditionnelles (email, custom)
             const handleId = result === 'success' ? 'success' : 'failure';
             relevantEdges = edges.filter(edge => 
                 edge.source === currentNodeId && edge.sourceHandle === handleId
             );
             console.log(`Nœud ${currentNodeId} avec transitions conditionnelles, résultat: ${result}, handle: ${handleId}, edges trouvés:`, relevantEdges);
         } else {
-            // Pour les noeuds avec sortie unique
+            // Pour les noeuds avec sortie unique (start, sms, end)
             relevantEdges = edges.filter(edge => 
                 edge.source === currentNodeId
             );

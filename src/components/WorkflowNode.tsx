@@ -1,6 +1,6 @@
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import {Handle, Position, type NodeProps, useUpdateNodeInternals} from '@xyflow/react';
 import {
-    canHaveConditionalOutputs,
+    hasConditionalOutputsByType,
     getStatusColor,
     getStatusLabel,
     getStepIcon,
@@ -9,15 +9,22 @@ import {
 } from "../utils/step_utils.ts";
 import { twMerge } from 'tailwind-merge';
 import type {WorkflowNodeType} from "../hooks/useWorkflowState.ts";
+import { useEffect } from 'react';
 
-export default function WorkflowNode({ data, selected }: NodeProps<WorkflowNodeType>) {
+export default function WorkflowNode({ data, selected, id }: NodeProps<WorkflowNodeType>) {
+    const updateNodeInternals = useUpdateNodeInternals();
     const statusColor = getStatusColor(data.status);
     const selectedStyle = selected ? 'border-blue-500 shadow-lg' : '';
     
-    const hasConditionalOutputs = canHaveConditionalOutputs(data.stepType) && data.hasConditionalOutputs;
+    // Les sorties conditionnelles sont déterminées automatiquement par le type
+    const hasConditionalOutputs = hasConditionalOutputsByType(data.stepType);
     const showInput = needsInput(data.stepType);
     const showOutput = needsOutput(data.stepType);
 
+
+    useEffect(() => {
+        updateNodeInternals(id);
+    }, [id, data.stepType, updateNodeInternals]);
     return (
         <div
             className={twMerge(

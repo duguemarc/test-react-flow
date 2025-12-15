@@ -31,8 +31,14 @@ export const getStatusLabel = (status?: ExecutionStatus): string => {
     return labelMap[status || 'pending'];
 };
 
+// Nouvelle logique : les types qui ont AUTOMATIQUEMENT des sorties conditionnelles
+export const hasConditionalOutputsByType = (stepType: StepType): boolean => {
+    return ['email', 'custom'].includes(stepType);
+};
+
 export const canHaveConditionalOutputs = (stepType: StepType): boolean => {
-    return !['start', 'end'].includes(stepType);
+    // Maintenu pour compatibilité mais maintenant c'est déterminé automatiquement
+    return hasConditionalOutputsByType(stepType);
 };
 
 export const needsInput = (stepType: StepType): boolean => {
