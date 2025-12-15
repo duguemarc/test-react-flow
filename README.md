@@ -1,6 +1,6 @@
 # React + TypeScript + Vite
 
-Simple projet test de React flow en React + Typescript / tailwind 
+Projet pour simuler un simple scénario webmarketing avec React flow / React + Typescript / tailwind 
 
 Pour démarrer :
 
