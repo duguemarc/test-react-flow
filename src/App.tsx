@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ReactFlow, type NodeTypes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import NodeEditPanel from './components/NodeEditPanel';
@@ -6,8 +6,9 @@ import Toolbar from './components/Toolbar';
 import SimulationLog from './components/SimulationLog';
 import { useWorkflowState, type WorkflowNodeType } from './hooks/useWorkflowState';
 import { useWorkflowSimulation } from './hooks/useWorkflowSimulation';
+import { useFlowPersistence } from './hooks/useFlowPersistence';
 import WorkflowNode from "./components/WorkflowNode.tsx";
-import type { StepType, ExecutionStatus } from './types/WorkflowSimulationTypes';
+import type {StepType, ExecutionStatus} from './types/WorkflowSimulationTypes';
 
 const initialNodes: WorkflowNodeType[] = [
     {
@@ -33,6 +34,22 @@ const nodeTypes: NodeTypes = {
 };
 
 export default function App() {
+    const { saveFlow, loadFlow, hasSavedFlow } = useFlowPersistence();
+
+    // Charger les données sauvegardées ou utiliser les valeurs par défaut
+    const getInitialData = () => {
+        if (hasSavedFlow()) {
+            const saved = loadFlow();
+            return {
+                nodes: saved.nodes.length > 0 ? saved.nodes : initialNodes,
+                edges: saved.edges.length > 0 ? saved.edges : initialEdges
+            };
+        }
+        return { nodes: initialNodes, edges: initialEdges };
+    };
+
+    const { nodes: loadedNodes, edges: loadedEdges } = getInitialData();
+
     const {
         nodes,
         edges,
@@ -46,7 +63,7 @@ export default function App() {
         addNode,
         deleteNode,
         setNodes,
-    } = useWorkflowState(initialNodes, initialEdges);
+    } = useWorkflowState(loadedNodes, loadedEdges);
 
     const {
         isSimulating,
@@ -57,6 +74,31 @@ export default function App() {
     } = useWorkflowSimulation();
 
     const [nodeIdCounter, setNodeIdCounter] = useState(2);
+
+    // Référence pour le debounce
+    const saveTimeoutRef = useRef<number | null>(null);
+
+    // Sauvegarde automatique avec debounce
+    useEffect(() => {
+        // Annuler la sauvegarde précédente
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Programmer une nouvelle sauvegarde uniquement si on a des données
+        if (nodes.length > 0 || edges.length > 0) {
+            saveTimeoutRef.current = setTimeout(() => {
+                saveFlow(nodes, edges);
+            }, 2000); // Debounce de 2 secondes
+        }
+
+        // Cleanup
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, [nodes, edges, saveFlow]);
 
     const getDefaultName = (type: StepType): string => {
         const nameMap: Record<StepType, string> = {
@@ -155,12 +197,12 @@ export default function App() {
             <div className="w-80 bg-white flex flex-col overflow-scroll">
                 {
                     !isSimulating &&
-                <div className="flex-1">
-                    <NodeEditPanel
-                        selectedNode={selectedNode}
-                        onNodeUpdate={onNodeUpdate}
-                    />
-                </div>
+                    <div className="flex-1">
+                        <NodeEditPanel
+                            selectedNode={selectedNode}
+                            onNodeUpdate={onNodeUpdate}
+                        />
+                    </div>
                 }
                 <div className={`border-t p-4 bg-gray-400 basis-auto justify-center flex ${!isSimulating ? 'overflow-scroll' :''}`}>
                     <SimulationLog

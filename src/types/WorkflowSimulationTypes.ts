@@ -12,11 +12,6 @@ export type WorkflowNodeData = {
     hasConditionalOutputs?: boolean;
     successRate?: number; // Pourcentage de réussite pour les nœuds custom (0-100)
 }
-
-export interface WorkflowEdgeData {
-    transitionType: TransitionType;
-}
-
 export interface SimulationLogEntry {
     nodeId: string;
     nodeName: string;
